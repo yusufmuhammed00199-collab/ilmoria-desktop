@@ -57,6 +57,7 @@ if (server && location.origin === server) {
     signedIn: (on) => ipcRenderer.send('signed-in', !!on),
     checkForUpdates: () => ipcRenderer.invoke('update:check'),
     onUpdate: (cb) => listen('update', cb),
+    installUpdate: () => ipcRenderer.send('update:install'),
   });
 
   // The tray's and the menu's "Settings…"

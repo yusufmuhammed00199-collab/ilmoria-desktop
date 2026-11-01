@@ -71,3 +71,6 @@ ipcMain.on('change-school', (e) => {
 });
 
 ipcMain.handle('update:check', async (e) => (fromServer(e) ? actions.checkUpdate(true) : null));
+ipcMain.on('update:install', (e) => {
+  if (fromServer(e)) actions.installUpdate();
+});

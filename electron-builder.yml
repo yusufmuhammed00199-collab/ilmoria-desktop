@@ -22,8 +22,14 @@ electronLanguages:
   - en-US
   - en-GB
   - ar
-# Updates are offered by the school's server (/desktop/latest.json), not by electron-builder
-publish: null
+# Windows updates itself in the background from the GitHub releases (electron-updater reads
+# latest.yml there); macOS is offered the download (/desktop/latest.json) until the app is
+# Apple-signed. Builds use --publish never: the release workflow uploads the files.
+publish:
+  provider: github
+  owner: yusufmuhammed00199-collab
+  repo: ilmoria-desktop
+  releaseType: release
 protocols:
   - name: Ilmoria
     schemes:

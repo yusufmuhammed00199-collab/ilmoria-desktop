@@ -48,7 +48,7 @@ function start() {
   const { createMainWindow, showWindow } = require('./window');
   const { createTray, rebuildTray, applyLoginItem } = require('./tray');
   const { buildMenu } = require('./menu');
-  const { checkUpdate } = require('./updates');
+  const { checkUpdate, installUpdate } = require('./updates');
   const { openSetup } = require('./setup');
   const { openSplash, revealWhenReady } = require('./splash');
   require('./ipc');
@@ -60,6 +60,7 @@ function start() {
     buildMenu,
     rebuildTray,
     checkUpdate,
+    installUpdate,
     openSettings: () => {
       showWindow();
       if (state.win && isServer(state.win.webContents.getURL())) state.win.webContents.send('open-settings');

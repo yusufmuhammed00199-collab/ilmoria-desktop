@@ -32,7 +32,11 @@ function rebuildTray() {
   tray.setContextMenu(
     Menu.buildFromTemplate([
       { label: L('open'), click: () => actions.showWindow() },
-      ...(update ? [{ label: L('downloadVersion', { v: update.version }), click: () => void shell.openExternal(update.url) }] : []),
+      ...(update?.ready
+        ? [{ label: L('restartToUpdate', { v: update.version }), click: () => actions.installUpdate() }]
+        : update?.url
+          ? [{ label: L('downloadVersion', { v: update.version }), click: () => void shell.openExternal(update.url) }]
+          : []),
       { type: 'separator' },
       { label: L('notifications'), submenu: [level('all', L('notifyAll')), level('direct', L('notifyDirect')), level('none', L('notifyNone'))] },
       { label: L('sound'), type: 'checkbox', checked: prefs.sound, click: (item) => setPrefs({ sound: item.checked }) },

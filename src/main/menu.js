@@ -13,8 +13,8 @@ function buildMenu() {
       showNote({
         id: 'update',
         title: u ? L('updateReady', { v: u.version }) : L('latest'),
-        body: u ? L('updateBody') : `${APP_NAME} ${app.getVersion()}`,
-        onClick: u ? () => void shell.openExternal(u.url) : undefined,
+        body: !u ? `${APP_NAME} ${app.getVersion()}` : u.ready ? L('updateRestart') : u.url ? L('updateBody') : L('updateDownloading'),
+        onClick: u?.ready ? () => actions.installUpdate() : u?.url ? () => void shell.openExternal(u.url) : undefined,
       });
     } catch {
       showNote({ id: 'update', title: L('updateFailed'), body: L('updateFailedBody') });

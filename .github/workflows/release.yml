@@ -67,7 +67,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: dist/*.exe
+          # latest.yml and the blockmap let installed apps update themselves in the background
+          path: |
+            dist/*.exe
+            dist/*.exe.blockmap
+            dist/latest.yml
           if-no-files-found: error
       # The Microsoft Store package: upload it in Partner Center (Microsoft signs it, so it
       # installs without SmartScreen). Its identity comes from the repository variables.
