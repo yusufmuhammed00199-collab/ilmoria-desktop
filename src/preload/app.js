@@ -58,6 +58,8 @@ if (server && location.origin === server) {
     checkForUpdates: () => ipcRenderer.invoke('update:check'),
     onUpdate: (cb) => listen('update', cb),
     installUpdate: () => ipcRenderer.send('update:install'),
+    // The page has drawn its first screen: the opening animation can end and the app appear
+    appReady: () => ipcRenderer.send('app-ready'),
   });
 
   // The tray's and the menu's "Settings…"

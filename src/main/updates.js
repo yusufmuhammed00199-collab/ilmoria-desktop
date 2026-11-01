@@ -11,7 +11,7 @@
  *    offered as a download (the school's server says which is newest: /desktop/latest.json).
  *  - Microsoft Store: the Store keeps its copy up to date.
  */
-const { app, net, shell } = require('electron');
+const { app, net } = require('electron');
 const store = require('../store');
 const { state, actions } = require('./state');
 const { isMac, isWin, isServer, origin, L } = require('./util');
@@ -125,11 +125,8 @@ async function checkUpdate(manual) {
   const key = isWin ? 'windows' : isMac ? (process.arch === 'arm64' ? 'macArm' : 'macIntel') : 'linux';
   const given = j.downloads?.[key]?.url;
   const url = typeof given === 'string' && /^https:\/\//.test(given) ? given : `${origin()}/download`;
+  // No pop-up for a download: it's listed in the tray menu and the app's settings for whoever wants it
   tell({ version: j.version, url });
-  if (!manual && store.get().notifiedVersion !== j.version) {
-    store.set({ notifiedVersion: j.version });
-    showNote({ id: 'update', title: L('updateReady', { v: j.version }), body: L('updateBody'), onClick: () => void shell.openExternal(url) });
-  }
   return state.update;
 }
 
