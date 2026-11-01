@@ -63,6 +63,22 @@ nsis:
   # build/installer.nsh gives the setup Arabic words for steps that only had English (NSIS warns when a word is replaced)
   warningsAsErrors: false
 
+# Microsoft Store package (MSIX). Microsoft signs it when the Store accepts it, so it installs
+# with no SmartScreen warning. The three identity values come from Partner Center (Product
+# identity page) once the name "Ilmoria" is reserved; the release workflow fills them in from
+# the repository variables STORE_IDENTITY_NAME, STORE_PUBLISHER and STORE_PUBLISHER_NAME.
+appx:
+  applicationId: Ilmoria
+  displayName: Ilmoria
+  identityName: Ilmoria.Desktop
+  publisher: CN=Ilmoria
+  publisherDisplayName: Ilmoria
+  backgroundColor: "#0E9F8E"
+  languages:
+    - en-US
+    - ar-SA
+  artifactName: Ilmoria-${version}-store.${ext}
+
 mac:
   category: public.app-category.education
   icon: build/icon.icns

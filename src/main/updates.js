@@ -32,6 +32,8 @@ const newer = (a, b) => {
 
 /** manual: asked by the person (errors are reported, and no notification of its own) */
 async function checkUpdate(manual) {
+  // The Microsoft Store keeps its copy up to date itself
+  if (process.windowsStore) return null;
   const j = await fetchJson(`${origin()}/desktop/latest.json`, 10_000);
   if (!j || j.app !== MANIFEST_APP || typeof j.version !== 'string') {
     if (manual) throw new Error('unavailable');

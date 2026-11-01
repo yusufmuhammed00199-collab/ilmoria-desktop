@@ -9,7 +9,10 @@
 #   macOS:   CSC_LINK (base64 Developer ID Application .p12) and CSC_KEY_PASSWORD,
 #            plus APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD and APPLE_TEAM_ID to notarize
 # Without them the Mac app is signed "ad hoc" (it opens after Control-click > Open)
-# and Windows shows SmartScreen's "More info > Run anyway".
+# and Windows shows SmartScreen's "More info > Run anyway" for the downloaded installer.
+# The Microsoft Store package (built too) is signed by Microsoft and shows no warning; set the
+# repository variables STORE_IDENTITY_NAME, STORE_PUBLISHER and STORE_PUBLISHER_NAME from
+# Partner Center's Product identity page.
 name: Release
 
 on:
@@ -65,6 +68,26 @@ jobs:
         with:
           name: windows
           path: dist/*.exe
+          if-no-files-found: error
+      # The Microsoft Store package: upload it in Partner Center (Microsoft signs it, so it
+      # installs without SmartScreen). Its identity comes from the repository variables.
+      - name: Build the Microsoft Store package (MSIX)
+        shell: bash
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          STORE_IDENTITY_NAME: ${{ vars.STORE_IDENTITY_NAME }}
+          STORE_PUBLISHER: ${{ vars.STORE_PUBLISHER }}
+          STORE_PUBLISHER_NAME: ${{ vars.STORE_PUBLISHER_NAME }}
+        run: |
+          args=(--win appx --x64 --publish never)
+          [ -n "$STORE_IDENTITY_NAME" ] && args+=("-c.appx.identityName=$STORE_IDENTITY_NAME")
+          [ -n "$STORE_PUBLISHER" ] && args+=("-c.appx.publisher=$STORE_PUBLISHER")
+          [ -n "$STORE_PUBLISHER_NAME" ] && args+=("-c.appx.publisherDisplayName=$STORE_PUBLISHER_NAME")
+          npx electron-builder "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: microsoft-store
+          path: dist/*.appx
           if-no-files-found: error
 
   mac:

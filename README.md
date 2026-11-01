@@ -61,10 +61,23 @@ machines and publishes the installers as a release. After a release, update
 `lms/public/desktop/latest.json` (version and links): the app and the
 download page (`/download`) read it.
 
-## Signing
+## Signing (no warnings when installing)
 
-Without certificates the installers work, with a warning the first time:
-Windows SmartScreen ("More info", then "Run anyway") and macOS Gatekeeper
-(Control-click the app, then "Open"). To remove the warnings, add an Apple
-Developer ID certificate (and notarization) and a Windows code-signing
-certificate as repository secrets; the workflow lists their names.
+Without signing, the installers work but warn the first time: Windows SmartScreen
+("More info", then "Run anyway") and macOS Gatekeeper (Control-click, then "Open").
+The warnings go away only when Microsoft and Apple can verify who made the app:
+
+- **Windows, free:** publish through the **Microsoft Store**. Registration is free; the
+  workflow already builds the Store package (MSIX, artifact "microsoft-store"). After
+  reserving the name "Ilmoria" in Partner Center, set the repository variables
+  `STORE_IDENTITY_NAME`, `STORE_PUBLISHER` and `STORE_PUBLISHER_NAME` from its Product
+  identity page and upload the package there. Microsoft signs it; it installs and
+  updates from the Store with no warning.
+- **Windows, the downloaded .exe:** a code-signing certificate (OV, about $150–300 a
+  year, key in a hardware token or a cloud signing service). The publisher then shows as
+  Ilmoria; SmartScreen may still warn for a while until the installer earns reputation.
+  Add it as `WIN_CSC_LINK` / `WIN_CSC_KEY_PASSWORD` secrets.
+- **macOS:** the Apple Developer Program ($99 a year) gives a "Developer ID Application"
+  certificate and notarization. Add `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`,
+  `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` as repository secrets: the workflow
+  then signs and notarizes the Mac apps, and they open with no warning.

@@ -36,7 +36,7 @@ function rebuildTray() {
       { type: 'separator' },
       { label: L('notifications'), submenu: [level('all', L('notifyAll')), level('direct', L('notifyDirect')), level('none', L('notifyNone'))] },
       { label: L('sound'), type: 'checkbox', checked: prefs.sound, click: (item) => setPrefs({ sound: item.checked }) },
-      ...(app.isPackaged ? [{ label: L('openAtLogin'), type: 'checkbox', checked: prefs.openAtLogin, click: (item) => setPrefs({ openAtLogin: item.checked }) }] : []),
+      ...(app.isPackaged && !process.windowsStore ? [{ label: L('openAtLogin'), type: 'checkbox', checked: prefs.openAtLogin, click: (item) => setPrefs({ openAtLogin: item.checked }) }] : []),
       { label: L('settings'), enabled: signedIn, click: () => actions.openSettings() },
       { type: 'separator' },
       { label: L('quit'), click: () => actions.quit() },
@@ -46,7 +46,8 @@ function rebuildTray() {
 
 /** Starting with the computer (hidden in the tray when it does) */
 function applyLoginItem() {
-  if (!app.isPackaged) return;
+  // (The Store's copy starts with Windows from Windows' own Startup apps settings)
+  if (!app.isPackaged || process.windowsStore) return;
   const on = store.get().prefs.openAtLogin;
   try {
     if (isMac) app.setLoginItemSettings({ openAtLogin: on, openAsHidden: true });

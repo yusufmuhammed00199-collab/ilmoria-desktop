@@ -79,6 +79,16 @@ const badge = (size, label) => `
 
 const TRAY_SIZES = [16, 20, 24, 32, 40, 48, 64];
 
+/** A Store tile: the mark in white (with the amber sun), centred, taking `mark` of the height */
+const storeTile = (w, h, mark) => {
+  const mh = Math.round(h * mark);
+  const mw = Math.round((mh * 342) / 390);
+  return `
+<div style="width:${w}px;height:${h}px;background:${TEAL};display:flex;align-items:center;justify-content:center">
+  <svg width="${mw}" height="${mh}" viewBox="0 0 342 390">${BOOK('#FFFFFF')}<circle fill="${SUN}" cx="171" cy="43" r="43"/></svg>
+</div>`;
+};
+
 /** The installer's welcome and finish pages: a night-blue panel with the emblem and the name */
 const installerSidebar = () => `
 <div style="position:relative;width:164px;height:314px;overflow:hidden;font-family:'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;
@@ -147,6 +157,19 @@ async function main() {
     await shoot(badge(16, label), 16, path.join(out, 'badges', `overlay-${n}.png`));
     await shoot(badge(32, label), 32, path.join(out, 'badges', `overlay-${n}@2x.png`));
   }
+  // Microsoft Store (MSIX) tiles: the white mark on the brand teal (the package's background colour)
+  fs.mkdirSync(path.join(out, 'appx'), { recursive: true });
+  for (const [name, w, h, mark] of [
+    ['StoreLogo.png', 50, 50, 0.7],
+    ['Square44x44Logo.png', 44, 44, 0.74],
+    ['SmallTile.png', 71, 71, 0.56],
+    ['Square150x150Logo.png', 150, 150, 0.5],
+    ['LargeTile.png', 310, 310, 0.46],
+    ['Wide310x150Logo.png', 310, 150, 0.56],
+  ]) {
+    await shootAt(storeTile(w, h, mark), w, h, 1, path.join(out, 'appx', name));
+  }
+
   // The installer's artwork (drawn at twice the size, then made smaller for clean edges)
   await shootAt(installerSidebar(), 164, 314, 2, path.join(out, 'sidebar-2x.png'));
   await shootAt(installerHeader(), 150, 57, 2, path.join(out, 'header-2x.png'));
