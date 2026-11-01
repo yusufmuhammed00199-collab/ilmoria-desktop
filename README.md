@@ -55,7 +55,7 @@ npm run dist:mac-on-linux       # macOS .zip on Linux, signed ad hoc with rcodes
 npm run icons                   # redraw the icons from the brand mark
 ```
 
-Pushing a tag such as `v1.0.1` to the desktop repository runs
+Raising "version" in package.json and pushing to the desktop repository runs
 `.github/workflows/release.yml`, which builds Windows and macOS on GitHub's
 machines and publishes the installers as a release. After a release, update
 `lms/public/desktop/latest.json` (version and links): the app and the
