@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>School address</title>
+<style>
+  :root { --teal: #0E9F8E; --teal-ink: #0B7F72; --ink: #0F1B33; --muted: #5B6779; --line: #D6DEE6; --canvas: #F2F5F8; --error: #B42318; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font: 14.5px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: #fff; padding: 26px 28px; display: flex; flex-direction: column; }
+  h1 { font-size: 19px; margin: 0; letter-spacing: -0.01em; }
+  p { color: var(--muted); margin: 6px 0 18px; }
+  label { font-weight: 650; display: block; margin-bottom: 6px; }
+  .field { display: flex; align-items: center; border: 1.5px solid var(--line); border-radius: 12px; padding: 0 12px; height: 46px; }
+  .field:focus-within { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(14,159,142,.18); }
+  .field span { color: var(--muted); }
+  input { flex: 1; border: 0; outline: 0; font: inherit; height: 100%; min-width: 0; background: transparent; color: var(--ink); }
+  .error { color: var(--error); min-height: 22px; margin: 8px 0 0; font-size: 13.5px; }
+  .reset { background: none; border: 0; padding: 0; font: inherit; color: var(--teal-ink); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .actions { margin-top: auto; display: flex; justify-content: flex-end; gap: 10px; }
+  .btn { font: inherit; font-weight: 650; border-radius: 999px; padding: 9px 20px; cursor: pointer; border: 1px solid var(--line); background: #fff; color: var(--ink); }
+  .btn.primary { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn:focus-visible, .reset:focus-visible { outline: 3px solid rgba(14,159,142,.35); outline-offset: 2px; }
+</style>
+</head>
+<body>
+  <h1 data-t="title">Your school’s address</h1>
+  <p data-t="intro">Most schools use app.ilmoria.com. If your school has its own Ilmoria address, enter it here.</p>
+  <form id="form" novalidate>
+    <label for="address" data-t="label">Address</label>
+    <div class="field" dir="ltr"><span>https://</span><input id="address" autocomplete="off" spellcheck="false" placeholder="app.ilmoria.com" dir="ltr"></div>
+    <p class="error" id="error" role="alert"></p>
+    <button type="button" class="reset" id="reset" data-t="reset">Use app.ilmoria.com</button>
+  </form>
+  <div class="actions">
+    <button class="btn" id="cancel" type="button" data-t="cancel">Cancel</button>
+    <button class="btn primary" id="save" form="form" type="submit" data-t="connect">Connect</button>
+  </div>
+<script>
+  const AR = new URLSearchParams(location.search).get('lang') === 'ar';
+  const W = {
+    title: ['Your school’s address', 'عنوان مدرستك'],
+    intro: ['Most schools use app.ilmoria.com. If your school has its own Ilmoria address, enter it here.', 'تستخدم معظم المدارس app.ilmoria.com. إذا كان لمدرستك عنوان خاص على إلموريا، فأدخله هنا.'],
+    label: ['Address', 'العنوان'],
+    reset: ['Use app.ilmoria.com', 'استخدام app.ilmoria.com'],
+    cancel: ['Cancel', 'إلغاء'],
+    connect: ['Connect', 'اتصال'],
+    checking: ['Checking…', 'جارٍ التحقق…'],
+    empty: ['Enter your school’s address.', 'أدخل عنوان مدرستك.'],
+    invalid: ['That doesn’t look like a web address. Check it and try again.', 'هذا لا يبدو عنوان موقع. تحقّق منه وحاول مرة أخرى.'],
+    'not-ilmoria': ['That address isn’t an Ilmoria school. Check it with your school.', 'هذا العنوان ليس لمدرسة على إلموريا. تحقّق منه مع مدرستك.'],
+    unreachable: ['That address can’t be reached. Check it and your internet connection.', 'تعذّر الوصول إلى هذا العنوان. تحقّق منه ومن اتصالك بالإنترنت.'],
+    closed: ['Something went wrong. Close this window and try again.', 'حدث خطأ. أغلق هذه النافذة وحاول مرة أخرى.'],
+  };
+  const tr = (k) => (W[k] || W.closed)[AR ? 1 : 0];
+  document.documentElement.lang = AR ? 'ar' : 'en';
+  document.documentElement.dir = AR ? 'rtl' : 'ltr';
+  document.title = tr('title');
+  document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = tr(el.dataset.t); });
+  const input = document.getElementById('address');
+  const error = document.getElementById('error');
+  const save = document.getElementById('save');
+  window.setup.current().then((c) => {
+    if (!c) return;
+    input.value = c.server.replace(/^https:\/\//, '');
+    document.getElementById('reset').onclick = () => { input.value = c.fallback.replace(/^https:\/\//, ''); input.focus(); };
+    input.select();
+  });
+  document.getElementById('cancel').onclick = () => window.close();
+  document.getElementById('form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    error.textContent = '';
+    save.disabled = true;
+    save.textContent = tr('checking');
+    const r = await window.setup.save(input.value);
+    save.disabled = false;
+    save.textContent = tr('connect');
+    if (!r.ok) { error.textContent = tr(r.error); input.focus(); }
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') window.close(); });
+</script>
+</body>
+</html>

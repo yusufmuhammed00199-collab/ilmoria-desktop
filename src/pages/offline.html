@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Ilmoria</title>
+<style>
+  :root { --teal: #0E9F8E; --ink: #0F1B33; --muted: #5B6779; --canvas: #F2F5F8; --sun: #F5A623; }
+  html, body { height: 100%; margin: 0; }
+  body { font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--canvas); display: grid; place-items: center; -webkit-app-region: drag; }
+  .card { text-align: center; max-width: 380px; padding: 24px; }
+  .mark { width: 64px; height: 64px; margin: 0 auto 18px; position: relative; }
+  .mark .sun { position: absolute; left: 50%; top: 0; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%; background: var(--sun); animation: rise 2.4s ease-in-out infinite; }
+  .mark .arch { position: absolute; inset: 18px 6px 0; border-radius: 26px 26px 0 0; background: var(--teal); }
+  @keyframes rise { 0%, 100% { transform: translateY(4px); } 50% { transform: translateY(-3px); } }
+  @media (prefers-reduced-motion: reduce) { .mark .sun { animation: none; } }
+  h1 { font-size: 20px; margin: 0; }
+  p { color: var(--muted); margin: 6px 0 20px; }
+  button { -webkit-app-region: no-drag; font: inherit; font-weight: 650; border: 0; border-radius: 999px; padding: 10px 22px; background: var(--teal); color: #fff; cursor: pointer; }
+  button:focus-visible { outline: 3px solid rgba(14,159,142,.35); outline-offset: 2px; }
+  small { display: block; margin-top: 14px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="mark" aria-hidden="true"><div class="arch"></div><div class="sun"></div></div>
+  <h1 data-t="title">You’re offline</h1>
+  <p data-t="body">Ilmoria can’t reach your school right now. It will reconnect on its own when the internet is back.</p>
+  <button id="retry" data-t="retry">Try again</button>
+  <small id="when"></small>
+</div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const to = q.get('to') || '';
+  const AR = q.get('lang') === 'ar';
+  const W = {
+    title: ['You’re offline', 'لا يوجد اتصال'],
+    body: ['Ilmoria can’t reach your school right now. It will reconnect on its own when the internet is back.', 'لا يستطيع إلموريا الوصول إلى مدرستك الآن. سيعيد الاتصال تلقائيًا عند عودة الإنترنت.'],
+    retry: ['Try again', 'حاول مرة أخرى'],
+    trying: ['Trying again in {n} s', 'إعادة المحاولة خلال {n} ث'],
+    waiting: ['Waiting for the internet…', 'بانتظار الإنترنت…'],
+  };
+  const tr = (k, n) => W[k][AR ? 1 : 0].replace('{n}', n);
+  document.documentElement.lang = AR ? 'ar' : 'en';
+  document.documentElement.dir = AR ? 'rtl' : 'ltr';
+  document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = tr(el.dataset.t); });
+  const go = () => { if (/^https?:\/\//.test(to)) location.replace(to); };
+  document.getElementById('retry').addEventListener('click', go);
+  window.addEventListener('online', () => setTimeout(go, 800));
+  let left = 15;
+  const when = document.getElementById('when');
+  setInterval(() => {
+    left -= 1;
+    if (left <= 0) { left = 30; if (navigator.onLine) go(); }
+    when.textContent = navigator.onLine ? tr('trying', left) : tr('waiting');
+  }, 1000);
+</script>
+</body>
+</html>

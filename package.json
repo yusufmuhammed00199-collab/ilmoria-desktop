@@ -1,0 +1,27 @@
+{
+  "name": "ilmoria-desktop",
+  "productName": "Ilmoria",
+  "version": "1.0.0",
+  "description": "Ilmoria for Windows and macOS: your school, on your desk.",
+  "author": "Ilmoria",
+  "homepage": "https://app.ilmoria.com/download",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "icons": "node scripts/make-icons.cjs",
+    "dist:win": "electron-builder --win nsis --x64",
+    "dist:mac": "electron-builder --mac dmg zip --arm64 --x64",
+    "dist:mac-on-linux": "scripts/build-mac-on-linux.sh",
+    "dist:linux": "electron-builder --linux AppImage --x64"
+  },
+  "devDependencies": {
+    "electron": "44.10.1",
+    "electron-builder": "26.18.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yusufmuhammed00199-collab/ilmoria-desktop.git"
+  }
+}

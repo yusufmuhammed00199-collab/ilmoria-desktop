@@ -1,0 +1,93 @@
+# Builds the installers: Windows (.exe, NSIS), macOS (.dmg and .zip, Apple silicon and Intel), Linux (AppImage).
+# Signing happens on its own when the certificates are given as environment variables:
+#   Windows: CSC_LINK / CSC_KEY_PASSWORD (or WIN_CSC_LINK / WIN_CSC_KEY_PASSWORD)
+#   macOS:   CSC_LINK / CSC_KEY_PASSWORD (Developer ID Application) and, to notarize,
+#            APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID
+appId: com.ilmoria.desktop
+productName: Ilmoria
+copyright: Copyright © 2026 Ilmoria
+directories:
+  output: dist
+  buildResources: build
+files:
+  - package.json
+  - src/**/*
+  - build/icon.png
+  - build/tray/**
+  - build/badges/**
+asar: true
+compression: maximum
+# Chromium's own words in English and Arabic only (keeps the download smaller)
+electronLanguages:
+  - en-US
+  - en-GB
+  - ar
+# Updates are offered by the school's server (/desktop/latest.json), not by electron-builder
+publish: null
+protocols:
+  - name: Ilmoria
+    schemes:
+      - ilmoria
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
+  artifactName: Ilmoria-Setup-${version}.${ext}
+nsis:
+  # A guided setup: welcome, where to install, progress, then "Run Ilmoria"; in English or Arabic
+  # (whichever Windows uses), with the Ilmoria panel on the welcome and finish pages
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  multiLanguageInstaller: true
+  installerLanguages:
+    - en_US
+    - ar_SA
+  displayLanguageSelector: false
+  installerSidebar: build/installerSidebar.bmp
+  uninstallerSidebar: build/installerSidebar.bmp
+  installerHeader: build/installerHeader.bmp
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Ilmoria
+  uninstallDisplayName: Ilmoria
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+  include: build/installer.nsh
+  # build/installer.nsh gives the setup Arabic words for steps that only had English (NSIS warns when a word is replaced)
+  warningsAsErrors: false
+
+mac:
+  category: public.app-category.education
+  icon: build/icon.icns
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+    - target: zip
+      arch: [arm64, x64]
+  artifactName: Ilmoria-${version}-mac-${arch}.${ext}
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    NSCameraUsageDescription: Ilmoria uses your camera for video calls and exams that ask for it.
+    NSMicrophoneUsageDescription: Ilmoria uses your microphone for calls.
+    LSApplicationCategoryType: public.app-category.education
+dmg:
+  title: Ilmoria
+  artifactName: Ilmoria-${version}-mac-${arch}.${ext}
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  icon: build/icon.png
+  category: Network
+  artifactName: Ilmoria-${version}-linux-${arch}.${ext}

@@ -1,0 +1,110 @@
+# Builds the Ilmoria desktop app for Windows and macOS and publishes the installers.
+#
+# Push a tag such as v1.0.1 (matching "version" in package.json) to publish a release,
+# or run it by hand from the Actions tab to only build (the files appear under the run).
+#
+# Signing is optional and switches on by itself when these repository secrets exist:
+#   Windows: WIN_CSC_LINK (base64 .pfx) and WIN_CSC_KEY_PASSWORD
+#   macOS:   CSC_LINK (base64 Developer ID Application .p12) and CSC_KEY_PASSWORD,
+#            plus APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD and APPLE_TEAM_ID to notarize
+# Without them the Mac app is signed "ad hoc" (it opens after Control-click > Open)
+# and Windows shows SmartScreen's "More info > Run anyway".
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build the installer
+        shell: bash
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          if [ -z "$WIN_CSC_LINK" ]; then export CSC_IDENTITY_AUTO_DISCOVERY=false; unset WIN_CSC_LINK WIN_CSC_KEY_PASSWORD; fi
+          npx electron-builder --win nsis --x64 --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/*.exe
+          if-no-files-found: error
+
+  mac:
+    runs-on: macos-latest
+    env:
+      HAS_CERT: ${{ secrets.CSC_LINK != '' && 'yes' || 'no' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build, signed and notarized (with the Apple certificate)
+        if: env.HAS_CERT == 'yes'
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npx electron-builder --mac dmg zip --arm64 --x64 --publish never
+      - name: Build, signed ad hoc (no Apple certificate yet)
+        if: env.HAS_CERT != 'yes'
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          npx electron-builder --mac dir --arm64 --x64 --publish never -c.mac.identity=null -c.mac.hardenedRuntime=false
+          VERSION=$(node -p "require('./package.json').version")
+          for pair in "mac-arm64:arm64" "mac:x64"; do
+            dir="dist/${pair%%:*}"; arch="${pair##*:}"
+            codesign --force --deep --sign - "$dir/Ilmoria.app"
+            codesign --verify --deep --strict "$dir/Ilmoria.app"
+            stage="dist/dmg-$arch"; rm -rf "$stage"; mkdir -p "$stage"
+            cp -R "$dir/Ilmoria.app" "$stage/"
+            ln -s /Applications "$stage/Applications"
+            hdiutil create -volname "Ilmoria" -srcfolder "$stage" -ov -format UDZO "dist/Ilmoria-$VERSION-mac-$arch.dmg"
+            ditto -c -k --keepParent "$dir/Ilmoria.app" "dist/Ilmoria-$VERSION-mac-$arch.zip"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac
+          path: |
+            dist/*.dmg
+            dist/*.zip
+          if-no-files-found: error
+
+  release:
+    needs: [windows, mac]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Copies with fixed names (for links that always give the newest version)
+        run: |
+          cd out
+          cp Ilmoria-Setup-*.exe Ilmoria-Setup.exe
+          cp Ilmoria-*-mac-arm64.dmg Ilmoria-mac-arm64.dmg
+          cp Ilmoria-*-mac-x64.dmg Ilmoria-mac-x64.dmg
+          ls -la
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: out/*
+          generate_release_notes: true

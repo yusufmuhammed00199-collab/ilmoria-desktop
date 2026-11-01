@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Ilmoria</title>
+<style>
+  :root { --navy: #0f1b33; --teal: #0e9f8e; --teal-hi: #8ae8db; --sun: #f5a623; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; user-select: none; -webkit-app-region: drag; }
+  body { font-family: "Plus Jakarta Sans", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif; color: #fff; }
+
+  .card {
+    position: absolute; inset: 0; border-radius: 22px; overflow: hidden; isolation: isolate;
+    background:
+      radial-gradient(80% 70% at 50% 115%, rgba(14, 159, 142, .6) 0%, rgba(14, 159, 142, 0) 62%),
+      radial-gradient(130% 100% at 50% -10%, #17305a 0%, #0f1b33 55%, #0a1224 100%);
+    perspective: 900px; perspective-origin: 50% 38%;
+    animation: card-in .5s ease-out both;
+  }
+  .glow { position: absolute; left: 50%; top: 34%; width: 420px; height: 420px; margin: -210px 0 0 -210px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(245,166,35,.42) 0%, rgba(245,166,35,.1) 40%, rgba(245,166,35,0) 70%);
+    opacity: 0; animation: glow-in 1.4s ease-out .9s both, glow-pulse 3.2s ease-in-out 2.3s infinite alternate; z-index: -1; }
+  .rays { position: absolute; left: 50%; top: 23%; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%;
+    border: 2px solid rgba(245, 166, 35, .55); opacity: 0; animation: ray 1.6s cubic-bezier(.2,.7,.2,1) 1.25s both; }
+  .rays.r2 { animation-delay: 1.5s; border-color: rgba(138, 232, 219, .45); }
+
+  .world { position: absolute; inset: 0; transform-style: preserve-3d; }
+  .scene { position: absolute; inset: 0; transform-style: preserve-3d; }
+  body.leaving .scene { animation: fly-away .5s cubic-bezier(.5,0,.75,0) both; }
+  body.leaving .card { animation: card-out .55s ease-in .05s both; }
+
+  /* Things flowing in through the space */
+  .f { position: absolute; left: 50%; top: 42%; transform-style: preserve-3d; opacity: 0;
+    animation: f-in 1.25s cubic-bezier(.16,.84,.24,1) var(--in) both, f-drift var(--t) ease-in-out calc(var(--in) + 1.25s) infinite alternate; }
+  .sheet { display: block; width: 56px; height: 74px; margin: -37px 0 0 -28px; padding: 12px 9px; border-radius: 6px;
+    background: linear-gradient(160deg, #fff 0%, #e6edf3 100%); box-shadow: 0 16px 34px -14px rgba(0,0,0,.6); }
+  .sheet i { display: block; height: 4px; margin-bottom: 7px; border-radius: 2px; background: #c9d6e2; }
+  .sheet i:first-child { width: 70%; background: var(--teal); }
+  .sheet i:last-child { width: 50%; }
+  .ring { display: block; width: 84px; height: 84px; margin: -42px 0 0 -42px; border-radius: 50%; border: 2px solid rgba(19,176,158,.8); }
+  .ring.sun { border-color: rgba(245,166,35,.65); }
+  .orb { display: block; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%;
+    background: radial-gradient(circle at 34% 30%, var(--teal-hi) 0%, var(--teal) 46%, #06433b 100%); box-shadow: 0 14px 30px -10px rgba(0,0,0,.6); }
+  .orb.sun { background: radial-gradient(circle at 34% 30%, #ffe6a8 0%, var(--sun) 48%, #9c5a00 100%); }
+  .glyph { display: block; transform: translate(-50%, -50%); font-size: 60px; font-weight: 800; line-height: 1; color: rgba(255,255,255,.16); text-shadow: 0 0 22px rgba(19,176,158,.4); }
+  .cube { position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px; transform-style: preserve-3d; animation: spin 9s linear infinite; }
+  .cube b { position: absolute; inset: 0; border: 1.5px solid rgba(138,232,219,.9); background: rgba(14,159,142,.24); }
+  .cube b:nth-child(1) { transform: translateZ(15px); }
+  .cube b:nth-child(2) { transform: rotateY(180deg) translateZ(15px); }
+  .cube b:nth-child(3) { transform: rotateY(-90deg) translateZ(15px); }
+  .cube b:nth-child(4) { transform: rotateY(90deg) translateZ(15px); }
+  .cube b:nth-child(5) { transform: rotateX(90deg) translateZ(15px); background: rgba(245,166,35,.32); border-color: rgba(255,214,140,.95); }
+  .cube b:nth-child(6) { transform: rotateX(-90deg) translateZ(15px); }
+
+  /* The emblem: the book opens, the sun rises */
+  .emblem { position: absolute; left: 50%; top: 35%; width: 150px; height: 171px; margin: -86px 0 0 -75px; transform-style: preserve-3d;
+    animation: emblem-in 1.1s cubic-bezier(.2,.8,.2,1) .15s both, sway 6s ease-in-out 1.6s infinite alternate; }
+  .page { position: absolute; top: 0; width: 75px; height: 171px; overflow: visible; fill: #fff; filter: drop-shadow(0 18px 20px rgba(0,0,0,.45)); }
+  .page.left { left: 0; transform-origin: 100% 50%; animation: unfold-l 1.3s cubic-bezier(.2,.85,.2,1) .35s both; }
+  .page.right { right: 0; transform-origin: 0% 50%; animation: unfold-r 1.3s cubic-bezier(.2,.85,.2,1) .35s both; }
+  .sun-disc { position: absolute; left: 50%; top: 0; width: 38px; height: 38px; margin-left: -19px; border-radius: 50%;
+    background: radial-gradient(circle at 36% 32%, #ffd88a 0%, var(--sun) 55%, #d9860a 100%);
+    box-shadow: 0 0 34px 10px rgba(245,166,35,.45); transform: translateZ(30px); animation: rise 1.1s cubic-bezier(.2,.8,.2,1) 1s both; }
+
+  /* The name */
+  .name { position: absolute; left: 0; right: 0; top: 63%; text-align: center; transform-style: preserve-3d; }
+  .word { display: inline-flex; font-size: 46px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; perspective: 400px; }
+  .word span { display: inline-block; transform-origin: 50% 100%; animation: letter .7s cubic-bezier(.2,.8,.2,1) both; }
+  .tag { margin-top: 12px; font-size: 14.5px; color: rgba(255,255,255,.72); animation: fade-up .7s ease-out 2.1s both; }
+  .status { position: absolute; left: 0; right: 0; bottom: 26px; text-align: center; font-size: 12px; color: rgba(255,255,255,.55); opacity: 0; transition: opacity .4s; }
+  .status.on { opacity: 1; }
+  .bar { position: absolute; left: 50%; bottom: 52px; width: 120px; height: 3px; margin-left: -60px; border-radius: 3px; overflow: hidden; background: rgba(255,255,255,.1); opacity: 0; animation: fade-up .5s ease-out 2.3s both; }
+  .bar::after { content: ''; position: absolute; inset: 0; width: 40%; border-radius: 3px; background: linear-gradient(90deg, transparent, var(--teal-hi), transparent); animation: shimmer 1.3s ease-in-out infinite; }
+  [dir="rtl"] .word { letter-spacing: 0; }
+
+  @keyframes card-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+  @keyframes card-out { to { opacity: 0; transform: scale(1.04); } }
+  @keyframes fly-away { to { transform: translateZ(380px); opacity: 0; } }
+  @keyframes f-in {
+    from { opacity: 0; transform: translate3d(calc(var(--x) * .3), calc(var(--y) * .3), -1500px) rotateZ(calc(var(--r) - 120deg)) rotateY(-80deg) scale(var(--s)); }
+    to { opacity: var(--o); transform: translate3d(var(--x), var(--y), var(--z)) rotateZ(var(--r)) rotateY(0deg) scale(var(--s)); }
+  }
+  @keyframes f-drift {
+    from { opacity: var(--o); transform: translate3d(var(--x), var(--y), var(--z)) rotateZ(var(--r)) rotateY(0deg) scale(var(--s)); }
+    to { opacity: var(--o); transform: translate3d(calc(var(--x) + 14px), calc(var(--y) - 18px), calc(var(--z) + 50px)) rotateZ(calc(var(--r) + 14deg)) rotateY(26deg) scale(var(--s)); }
+  }
+  @keyframes spin { to { transform: rotateX(360deg) rotateY(720deg); } }
+  @keyframes emblem-in { from { transform: translateZ(-600px) rotateX(30deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes sway { from { transform: rotateY(-10deg) rotateX(4deg); } to { transform: rotateY(10deg) rotateX(-3deg); } }
+  @keyframes unfold-l { from { transform: rotateY(92deg); } to { transform: rotateY(18deg); } }
+  @keyframes unfold-r { from { transform: rotateY(-92deg); } to { transform: rotateY(-18deg); } }
+  @keyframes rise { from { transform: translateZ(30px) translateY(50px) scale(.5); opacity: 0; } to { transform: translateZ(30px) translateY(0) scale(1); opacity: 1; } }
+  @keyframes glow-in { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: scale(1); } }
+  @keyframes glow-pulse { from { opacity: .85; transform: scale(.96); } to { opacity: 1; transform: scale(1.05); } }
+  @keyframes ray { 0% { opacity: .9; transform: scale(.6); } 100% { opacity: 0; transform: scale(7); } }
+  @keyframes letter { from { opacity: 0; transform: rotateX(-95deg) translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes shimmer { from { transform: translateX(-110%); } to { transform: translateX(260%); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card *, .card { animation-duration: .01s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
+    .bar::after { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="glow"></div>
+  <div class="rays"></div>
+  <div class="rays r2"></div>
+  <div class="world">
+    <div class="scene" id="scene">
+      <div class="emblem">
+        <svg class="page left" viewBox="0 0 171 390" aria-hidden="true"><path d="M0 78 C66 77 125 101 160 154 C127 178 109 210 109 246 L109 390 C78 365 42 357 0 364 Z"/></svg>
+        <svg class="page right" viewBox="171 0 171 390" aria-hidden="true"><path d="M342 78 C276 77 217 101 182 154 C215 178 233 210 233 246 L233 390 C264 365 300 357 342 364 Z"/></svg>
+        <span class="sun-disc"></span>
+      </div>
+    </div>
+  </div>
+  <div class="name">
+    <div class="word" id="word" aria-label="Ilmoria"></div>
+    <div class="tag" id="tag"></div>
+  </div>
+  <div class="bar"></div>
+  <div class="status" id="status"></div>
+</div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const AR = q.get('lang') === 'ar';
+  const host = q.get('host') || 'app.ilmoria.com';
+  document.documentElement.lang = AR ? 'ar' : 'en';
+  document.documentElement.dir = AR ? 'rtl' : 'ltr';
+
+  // The name, a letter at a time (Arabic letters join, so the Arabic name rises as one word)
+  const word = document.getElementById('word');
+  const name = AR ? ['إلموريا'] : [...'Ilmoria'];
+  name.forEach((ch, i) => {
+    const s = document.createElement('span');
+    s.textContent = ch;
+    s.style.animationDelay = `${1.45 + i * 0.07}s`;
+    word.appendChild(s);
+  });
+  document.getElementById('tag').textContent = AR ? 'مدرستك على مكتبك' : 'Your school, on your desk';
+
+  // The 3D things that flow in: placed around the emblem, near ones larger, far ones fainter
+  const scene = document.getElementById('scene');
+  const items = [
+    ['sheet', -250, -120, 60, 1.1, -16, 1], ['sheet', 240, 70, 120, .9, 14, 1], ['sheet', 200, -150, -260, .8, 22, .8], ['sheet', -220, 110, -160, .75, -9, .8],
+    ['ring', 230, -40, 30, 1.1, 60, 1, 'teal'], ['ring', -260, 20, -300, 1.6, -30, .8, 'sun'], ['ring', 40, 150, -420, 2.2, 75, .6, 'teal'],
+    ['orb', -150, -170, -80, .9, 0, 1, 'sun'], ['orb', 300, -10, -220, .7, 0, .9, 'teal'], ['orb', -310, 150, 90, .5, 0, 1, 'teal'],
+    ['glyph', -120, 140, 40, 1, -10, 1, 'أ'], ['glyph', 150, -120, -60, .85, 12, 1, 'A'], ['glyph', 310, 150, -340, 1.4, -6, .9, 'ع'], ['glyph', -320, -60, -380, 1.2, 8, .9, 'π'],
+    ['cube', -190, -30, 160, .9, 20, 1], ['cube', 170, 160, -90, .7, -35, 1], ['cube', 320, -150, -200, .6, 10, .9],
+  ];
+  items.forEach(([kind, x, y, z, s, r, o, extra], i) => {
+    const f = document.createElement('div');
+    f.className = 'f';
+    f.style.cssText = `--x:${x}px;--y:${y}px;--z:${z}px;--s:${s};--r:${r}deg;--o:${o};--in:${(0.05 + i * 0.045).toFixed(3)}s;--t:${(7 + (i % 5) * 1.6).toFixed(1)}s`;
+    if (kind === 'sheet') f.innerHTML = '<span class="sheet"><i></i><i></i><i></i></span>';
+    else if (kind === 'ring') f.innerHTML = `<span class="ring ${extra}"></span>`;
+    else if (kind === 'orb') f.innerHTML = `<span class="orb ${extra}"></span>`;
+    else if (kind === 'glyph') { const g = document.createElement('span'); g.className = 'glyph'; g.textContent = extra; f.appendChild(g); }
+    else f.innerHTML = '<span class="cube"><b></b><b></b><b></b><b></b><b></b><b></b></span>';
+    scene.appendChild(f);
+  });
+
+  // Still here after a few seconds: say what it is waiting for
+  setTimeout(() => {
+    const st = document.getElementById('status');
+    st.textContent = AR ? `جارٍ الاتصال بـ ${host}…` : `Connecting to ${host}…`;
+    st.classList.add('on');
+  }, 3600);
+
+  window.splash?.onLeave(() => document.body.classList.add('leaving'));
+</script>
+</body>
+</html>
